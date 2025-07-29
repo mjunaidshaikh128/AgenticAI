@@ -3,11 +3,13 @@ import os
 import asyncio
 from dotenv import load_dotenv, find_dotenv
 from agents.run import RunConfig
+from tavily import TavilyClient
 
 _: bool = load_dotenv(find_dotenv())
 gemini_api_key: str | None = os.environ.get('GEMINI_API_KEY')
+tvly_api_key: str | None = os.environ.get("TAVILY_API_KEY")
 
-
+print(tvly_api_key)
 # Tracing disabled
 set_tracing_disabled(disabled=True)
 
@@ -63,11 +65,29 @@ def add(a: int, b: int) -> int:
     print(f"\n\nAdding {a} and {b}\n\n")
     return a + b
 
+@function_tool
+def webSearch(input: str) -> str:
+    print("\n\nSearching the internet\n\n")
+    tavily_client = TavilyClient(api_key=tvly_api_key)
+    response = tavily_client.search("Tell the time of karachi")
+    print(response)
+    return response
+
 math_agent: Agent = Agent(
     name="Alex - The Math Genius",
     instructions="You are math agent that can solve math problems",
     model="gemini-2.0-flash",
     tools=[add])
 
-result = Runner.run_sync(math_agent, "Add 3 + 5")
+weather_agent: Agent = Agent(
+    name="Global Weather Agent",
+    instructions="You are a weather agent that tells about the weather of different cities",
+    model="gemini-2.0-flash",
+    tools=[webSearch]
+)
+
+# result = Runner.run_sync(math_agent, "Add 3 + 5")
+# print(result.final_output)
+
+result = Runner.run_sync(weather_agent, "Tell me the weather of karachi today")
 print(result.final_output)
